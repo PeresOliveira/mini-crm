@@ -1,0 +1,35 @@
+# Ambientes virtuais
+venv/
+env/
+ENV/
+
+# Arquivos Python compilados
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+
+# Dados
+data/*.csv
+data/*.json
+
+# Configurações locais
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
