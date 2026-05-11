@@ -1,11 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.v1 import clientes
+from src.api.v1 import clientes, interacoes  # ADICIONAR interacoes
 
-# Criar aplicação
 app = FastAPI(
     title="Mini CRM API",
-    description="Sistema de Gestão de Clientes",
+    description="""
+    ## Sistema de Gestão de Clientes
+    
+    API para gerenciar clientes e interações comerciais.
+    
+    ### Funcionalidades:
+    * CRUD completo de clientes
+    * Busca e paginação
+    * Gerenciamento de interações
+    * Histórico de contato
+    * Estatísticas de interações
+    
+    ### Documentação:
+    * Swagger UI: `/docs`
+    * ReDoc: `/redoc`
+    """,
     version="1.0.0",
     contact={
         "name": "Seu Nome",
@@ -18,39 +32,38 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, especifique origens
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 app.include_router(clientes.router)
+app.include_router(interacoes.router)
 
-# Endpoints de teste
 @app.get("/")
 def root():
     return {
         "message": "Mini CRM API is running",
         "version": "1.0.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
+        "endpoints": {
+            "clientes": "/clientes",
+            "interacoes": "/interacoes",
+            "docs": "/docs"
+        }
     }
 
 @app.get("/health")
 def health_check():
-    return {
-        "status": "healthy",
-        "service": "mini-crm-api"
-    }
+    return {"status": "healthy"}
 
 @app.get("/info")
-def info():    
+def info():
     return {
         "name": "Mini CRM",
         "version": "1.0.0",
-        "endpoints": {
-            "clientes": "/clientes",
-            "docs": "/docs"
+        "endpoints_count": {
+            "clientes": 5,
+            "interacoes": 6
         }
     }
