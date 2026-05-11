@@ -1,86 +1,56 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from src.db.session import get_db
-from src.models import Cliente
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from src.api.v1 import clientes
 
+# Criar aplicação
 app = FastAPI(
     title="Mini CRM API",
-    description="Sistema de gestão de clientes e interações",
-    version="0.1.0"
+    description="Sistema de Gestão de Clientes",
+    version="1.0.0",
+    contact={
+        "name": "Seu Nome",
+        "email": "seuemail@exemplo.com",
+    },
+    license_info={
+        "name": "MIT",
+    }
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Em produção, especifique origens
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+app.include_router(clientes.router)
+
+# Endpoints de teste
 @app.get("/")
 def root():
-    
     return {
         "message": "Mini CRM API is running",
-        "status": "online",
-        "version": "0.1.0"
+        "version": "1.0.0",
+        "docs": "/docs",
+        "redoc": "/redoc"
     }
 
 @app.get("/health")
 def health_check():
-   
     return {
         "status": "healthy",
-        "service": "mini-crm-api",
-        "timestamp": "2024-01-01"
+        "service": "mini-crm-api"
     }
-@app.get("/test-db")
-def test_database_connection(db: Session = Depends(get_db)):
-    try:
-        total_clientes = db.query(Cliente).count()
-        return {
-            "status": "connected",
-            "database": "SQLite",
-            "total_clientes": total_clientes,
-            "message": "Banco de dados funcionando!"
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
-    
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
 
-# Schema para criar cliente
-class ClienteCreate(BaseModel):
-    nome: str
-    email: str
-    telefone: Optional[str] = None
-
-@app.post("/clientes/test")
-def criar_cliente_teste(cliente: ClienteCreate, db: Session = Depends(get_db)):
-    """
-    Endpoint temporário para testar inserção no banco
-    """
-    try:
-        # Criar novo cliente
-        novo_cliente = Cliente(
-            nome=cliente.nome,
-            email=cliente.email,
-            telefone=cliente.telefone
-        )
-        
-        # Adicionar ao banco
-        db.add(novo_cliente)
-        db.commit()
-        db.refresh(novo_cliente)  # Atualiza com o ID gerado
-        
-        return {
-            "message": "Cliente criado com sucesso!",
-            "cliente": {
-                "id": novo_cliente.id,
-                "nome": novo_cliente.nome,
-                "email": novo_cliente.email,
-                "telefone": novo_cliente.telefone,
-                "data_cadastro": novo_cliente.data_cadastro
-            }
+@app.get("/info")
+def info():    
+    return {
+        "name": "Mini CRM",
+        "version": "1.0.0",
+        "endpoints": {
+            "clientes": "/clientes",
+            "docs": "/docs"
         }
-    except Exception as e:
-        return {
-            "error": str(e)
-        }
+    }
