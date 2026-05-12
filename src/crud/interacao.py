@@ -112,3 +112,16 @@ def get_resumo_interacoes(db: Session, cliente_id: int):
             "descricao": ultima_interacao.descricao
         } if ultima_interacao else None
     }
+def get_estatisticas_cliente(db: Session, cliente_id: int):
+    # Retorna estatísticas das interações de um cliente: total por tipo.
+    from sqlalchemy import func
+    from src.models.interacao import Interacao
+
+    stats = (
+        db.query(Interacao.tipo, func.count(Interacao.id).label("total"))
+        .filter(Interacao.cliente_id == cliente_id)
+        .group_by(Interacao.tipo)
+        .all()
+    )
+    # Converte para dicionário: {"ligacao": 2, "email": 1, ...}
+    return {stat[0]: stat[1] for stat in stats}

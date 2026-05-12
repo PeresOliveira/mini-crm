@@ -5,9 +5,9 @@ API para gestão de clientes e histórico de interações.
 
 ## Tecnologias Utilizadas
 - Python 3.11+
-- FastAPI (framework web)
-- SQLAlchemy (banco de dados)
-- SQLite (banco leve para desenvolvimento)
+- FastAPI 
+- SQLAlchemy
+- SQLite 
 
 ## Como Executar
 

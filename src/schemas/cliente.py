@@ -20,7 +20,7 @@ class ClienteOut(ClienteBase):
     id: int
     data_cadastro: datetime
     interacoes: List[InteracaoOut] = []  
-    class Config:
+    class ConfigDict:
         from_attributes = True
         
         json_schema_extra = {
