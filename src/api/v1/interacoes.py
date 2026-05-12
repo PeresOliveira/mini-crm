@@ -1,7 +1,9 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from src.db.session import get_db
+from src.schemas.filters import InteracaoFilters
 from src.schemas.interacao import (
     InteracaoCreate,
     InteracaoUpdate,
@@ -50,26 +52,30 @@ def create_interacao(
 )
 def list_interacoes_cliente(
     cliente_id: int,
-    skip: int = Query(0, ge=0, description="Número de registros para pular"),
-    limit: int = Query(100, ge=1, le=200, description="Máximo de registros"),
-    tipo: Optional[str] = Query(None, description="Filtrar por tipo de interação"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    tipo: Optional[str] = Query(None),
+    data_start: Optional[datetime] = Query(None),
+    data_end: Optional[datetime] = Query(None),
+    descricao_contains: Optional[str] = Query(None),
+    ordenar_por: str = Query("data", description="data, tipo, id"),
+    ordem: str = Query("desc", description="asc ou desc"),
     db: Session = Depends(get_db)
 ):
     cliente = crud_cliente.get_cliente(db, cliente_id)
     if not cliente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Cliente com ID {cliente_id} não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
     
-    if tipo and tipo not in ['ligacao', 'email', 'reuniao', 'whatsapp', 'proposta']:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Tipo inválido. Use: ligacao, email, reuniao, whatsapp, proposta"
-        )
-    
-    interacoes = crud_interacao.get_interacoes_por_cliente(
-        db, cliente_id, skip=skip, limit=limit, tipo=tipo
+    filters = InteracaoFilters(
+        tipo=tipo,
+        data_start=data_start,
+        data_end=data_end,
+        descricao_contains=descricao_contains,
+        ordenar_por=ordenar_por,
+        ordem=ordem
+    )
+    interacoes = crud_interacao.get_interacoes_por_cliente_com_filtros(
+        db, cliente_id, skip, limit, filters
     )
     return interacoes
 

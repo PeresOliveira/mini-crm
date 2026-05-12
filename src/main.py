@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.v1 import clientes, interacoes  # ADICIONAR interacoes
+from src.api.v1 import clientes, interacoes, analytics
+from src.api.v1 import clientes, interacoes  
 
 app = FastAPI(
     title="Mini CRM API",
@@ -40,6 +41,7 @@ app.add_middleware(
 
 app.include_router(clientes.router)
 app.include_router(interacoes.router)
+app.include_router(analytics.router)
 
 @app.get("/")
 def root():

@@ -4,6 +4,8 @@ from src.models.interacao import Interacao
 from src.schemas.interacao import InteracaoCreate, InteracaoUpdate
 from typing import Optional, List
 from datetime import datetime
+from src.schemas.filters import InteracaoFilters
+from sqlalchemy import desc, asc
 
 def get_interacao(db: Session, interacao_id: int):
     return db.query(Interacao).filter(Interacao.id == interacao_id).first()
@@ -125,3 +127,41 @@ def get_estatisticas_cliente(db: Session, cliente_id: int):
     )
     # Converte para dicionário: {"ligacao": 2, "email": 1, ...}
     return {stat[0]: stat[1] for stat in stats}
+
+def get_interacoes_por_cliente_com_filtros(
+    db: Session,
+    cliente_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    filters: InteracaoFilters = None
+):
+    """Busca interações de um cliente com filtros e ordenação."""
+    query = db.query(Interacao).filter(Interacao.cliente_id == cliente_id)
+    
+    if filters:
+        if filters.tipo:
+            query = query.filter(Interacao.tipo == filters.tipo)
+        if filters.data_start:
+            query = query.filter(Interacao.data >= filters.data_start)
+        if filters.data_end:
+            query = query.filter(Interacao.data <= filters.data_end)
+        if filters.descricao_contains:
+            query = query.filter(Interacao.descricao.ilike(f"%{filters.descricao_contains}%"))
+        
+        # Ordenação
+        ordem = filters.ordem if filters.ordem else "desc"
+        if filters.ordenar_por == "data":
+            campo = Interacao.data
+        elif filters.ordenar_por == "tipo":
+            campo = Interacao.tipo
+        else:
+            campo = Interacao.id
+        
+        if ordem == "asc":
+            query = query.order_by(campo.asc())
+        else:
+            query = query.order_by(campo.desc())
+    else:
+        query = query.order_by(desc(Interacao.data))
+    
+    return query.offset(skip).limit(limit).all()

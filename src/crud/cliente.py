@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from src.models.cliente import Cliente
 from src.schemas.cliente import ClienteCreate, ClienteUpdate
+from src.schemas.filters import ClienteFilters
 
 def get_cliente(db: Session, cliente_id: int):
     """
@@ -14,27 +15,28 @@ def get_cliente_by_email(db: Session, email: str):
     """
     return db.query(Cliente).filter(Cliente.email == email).first()
 
-def get_clientes(
-    db: Session, 
-    skip: int = 0, 
-    limit: int = 100,
-    search: str = None
-):
-    """
-    Lista clientes com paginação e busca opcional
-    """
-    
-    query = db.query(Cliente)  
+def get_clientes(db: Session, skip: int = 0, limit: int = 100, filters: ClienteFilters = None):
+    if filters is None:
+        filters = ClienteFilters()
+    query = db.query(Cliente)
+    if filters.nome_contains:
+        query = query.filter(Cliente.nome.ilike(f"%{filters.nome_contains}%"))
+    if filters.email_contains:
+        query = query.filter(Cliente.email.ilike(f"%{filters.email_contains}%"))
+    if filters.telefone_contains:
+        query = query.filter(Cliente.telefone.ilike(f"%{filters.telefone_contains}%"))
+    if filters.data_cadastro_start:
+        query = query.filter(Cliente.data_cadastro >= filters.data_cadastro_start)
+    if filters.data_cadastro_end:
+        query = query.filter(Cliente.data_cadastro <= filters.data_cadastro_end)
 
-    # Se tiver termo de busca, filtra por nome ou email
-    if search:
-        query = query.filter(
-            (Cliente.nome.contains(search)) | 
-            (Cliente.email.contains(search))
-        )
-    
-    # Aplica paginação e ordena
-    return query.order_by(Cliente.id.desc()).offset(skip).limit(limit).all()
+    campo = getattr(Cliente, filters.ordenar_por, Cliente.id)
+    if filters.ordem == "asc":
+        query = query.order_by(campo.asc())
+    else:
+        query = query.order_by(campo.desc())
+
+    return query.offset(skip).limit(limit).all()
     
 
 def count_clientes(db: Session, search: str = None):
@@ -114,3 +116,22 @@ def delete_cliente(db: Session, cliente_id: int):
     db.commit()
     
     return True
+
+def count_clientes_filtrados(db: Session, filters: ClienteFilters = None):
+    """Conta total de clientes que atendem aos filtros."""
+    if filters is None:
+        filters = ClienteFilters()
+    
+    query = db.query(Cliente)
+    if filters.nome_contains:
+        query = query.filter(Cliente.nome.ilike(f"%{filters.nome_contains}%"))
+    if filters.email_contains:
+        query = query.filter(Cliente.email.ilike(f"%{filters.email_contains}%"))
+    if filters.telefone_contains:
+        query = query.filter(Cliente.telefone.ilike(f"%{filters.telefone_contains}%"))
+    if filters.data_cadastro_start:
+        query = query.filter(Cliente.data_cadastro >= filters.data_cadastro_start)
+    if filters.data_cadastro_end:
+        query = query.filter(Cliente.data_cadastro <= filters.data_cadastro_end)
+    
+    return query.count()

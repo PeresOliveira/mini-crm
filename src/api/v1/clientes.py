@@ -4,6 +4,8 @@ from typing import List, Optional
 from src.db.session import get_db
 from src.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteOut
 from src.crud import cliente as crud_cliente
+from src.schemas.filters import ClienteFilters
+from datetime import datetime
 
 router = APIRouter(
     prefix="/clientes",
@@ -37,23 +39,50 @@ def create_cliente(
         )
     return crud_cliente.create_cliente(db, cliente)
 
-@router.get(
-    "/",
-    response_model=List[ClienteOut],
-    summary="Listar clientes",
-    description="Retorna lista paginada de clientes com busca opcional"
-)
+@router.get("/", response_model=List[ClienteOut])
 def list_clientes(
-    skip: int = Query(0, ge=0, description="Número de registros para pular"),
-    limit: int = Query(100, ge=1, le=200, description="Máximo de registros"),
-    search: Optional[str] = Query(None, description="Termo de busca (nome ou email)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    nome_contains: Optional[str] = Query(None),
+    email_contains: Optional[str] = Query(None),
+    telefone_contains: Optional[str] = Query(None),
+    data_cadastro_start: Optional[datetime] = Query(None),
+    data_cadastro_end: Optional[datetime] = Query(None),
+    ordenar_por: str = Query("id", regex="^(id|nome|email|data_cadastro)$"),
+    ordem: str = Query("desc", regex="^(asc|desc)$"),
     db: Session = Depends(get_db)
 ):
-    """
-    Lista clientes com paginação.       
-    """
-    clientes = crud_cliente.get_clientes(db, skip=skip, limit=limit, search=search)
+    filters = ClienteFilters(
+        nome_contains=nome_contains,
+        email_contains=email_contains,
+        telefone_contains=telefone_contains,
+        data_cadastro_start=data_cadastro_start,
+        data_cadastro_end=data_cadastro_end,
+        ordenar_por=ordenar_por,
+        ordem=ordem
+    )
+    clientes = crud_cliente.get_clientes(db, skip=skip, limit=limit, filters=filters)
     return clientes
+
+@router.get("/count", summary="Contar clientes com filtros")
+def count_clientes(
+    nome_contains: Optional[str] = Query(None),
+    email_contains: Optional[str] = Query(None),
+    telefone_contains: Optional[str] = Query(None),
+    data_cadastro_start: Optional[datetime] = Query(None),
+    data_cadastro_end: Optional[datetime] = Query(None),
+    db: Session = Depends(get_db)
+):
+    from src.schemas.filters import ClienteFilters
+    filters = ClienteFilters(
+        nome_contains=nome_contains,
+        email_contains=email_contains,
+        telefone_contains=telefone_contains,
+        data_cadastro_start=data_cadastro_start,
+        data_cadastro_end=data_cadastro_end
+    )
+    total = crud_cliente.count_clientes_filtrados(db, filters)
+    return {"total": total}
 
 @router.get(
     "/{cliente_id}",
@@ -61,24 +90,10 @@ def list_clientes(
     summary="Buscar cliente por ID",
     description="Retorna os dados de um cliente específico"
 )
-def get_cliente(
-    cliente_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    Busca cliente pelo ID.   
-    """
-    # Buscar cliente no banco
+def get_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db_cliente = crud_cliente.get_cliente(db, cliente_id)
-    
-    # Verificar se encontrou
     if not db_cliente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Cliente com ID {cliente_id} não encontrado"
-        )
-    
-    # Retornar cliente encontrado
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
     return db_cliente
 
 @router.put(
