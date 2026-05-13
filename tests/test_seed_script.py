@@ -1,8 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from scripts.seed_db import seed_database, limpar_banco
+from scripts.seed_db import limpar_banco
 from src.schemas.cliente import ClienteCreate
 from src.schemas.interacao import InteracaoCreate
+from unittest.mock import MagicMock, call
+from src.models import Cliente, Interacao
 
 # Fixture para simular uma sessão de banco
 @pytest.fixture
@@ -14,14 +17,15 @@ def mock_db_session():
 
 # Teste da função limpar_banco
 def test_limpar_banco(mock_db_session):
-    """limpar_banco deve deletar interações e depois clientes"""
     limpar_banco(mock_db_session)
-    # Verificar ordem: primeiro interações, depois clientes
-    mock_db_session.query.assert_any_call()
-    # O método delete() deve ser chamado em ambos
-    assert mock_db_session.query().delete.called
-    assert mock_db_session.commit.called
-
+    
+    # Verifica se query foi chamada para Interacao e Cliente
+    mock_db_session.query.assert_any_call(Interacao)
+    mock_db_session.query.assert_any_call(Cliente)
+    
+    # Verifica se delete e commit foram chamados
+    mock_db_session.query().delete.assert_called()
+    mock_db_session.commit.assert_called()
 # Teste do seed sem dados existentes
 @patch("scripts.seed_db.gerar_clientes_simulados")
 @patch("scripts.seed_db.gerar_interacoes_simuladas")

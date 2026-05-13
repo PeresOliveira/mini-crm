@@ -48,8 +48,8 @@ def list_clientes(
     telefone_contains: Optional[str] = Query(None),
     data_cadastro_start: Optional[datetime] = Query(None),
     data_cadastro_end: Optional[datetime] = Query(None),
-    ordenar_por: str = Query("id", regex="^(id|nome|email|data_cadastro)$"),
-    ordem: str = Query("desc", regex="^(asc|desc)$"),
+    ordenar_por: str = Query("id", pattern="^(id|nome|email|data_cadastro)$"),
+    ordem: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db)
 ):
     filters = ClienteFilters(
