@@ -26,6 +26,7 @@ def test_limpar_banco(mock_db_session):
     # Verifica se delete e commit foram chamados
     mock_db_session.query().delete.assert_called()
     mock_db_session.commit.assert_called()
+    
 # Teste do seed sem dados existentes
 @patch("scripts.seed_db.gerar_clientes_simulados")
 @patch("scripts.seed_db.gerar_interacoes_simuladas")
